@@ -13,7 +13,7 @@ install_requires = [
 ]
 
 
-setup(name='acapture',
+setup(name='pyglview',
     version=version,
     description="Python OpenGL direct viewer instead of OpenCV imshow/waitKey.",
     long_description="See https://github.com/aieater/gpueater_pyglview",
@@ -31,9 +31,9 @@ setup(name='acapture',
     keywords='opencv opengl python imshow waitkey viewer realtime',
     author='Pegara, Inc.',
     author_email='info@pegara.com',
-    url='https://github.com/aieater/python_acapture',
+    url='https://github.com/aieater/python_pyglview',
     license='MIT',
-    packages=['acapture'],
+    packages=['pyglview'],
     zip_safe=False,
     install_requires=install_requires,
     entry_points={}
