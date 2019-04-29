@@ -3,7 +3,7 @@ import sys, os
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-version = '1.1'
+version = '1.1.1'
 
 install_requires = [
     'opencv-python',
@@ -12,11 +12,12 @@ install_requires = [
     'PyOpenGL_accelerate',
 ]
 
+readme = open("README.md").read()
 
 setup(name='pyglview',
     version=version,
     description="Python OpenGL direct viewer instead of OpenCV imshow/waitKey.",
-    long_description="See https://github.com/aieater/gpueater_pyglview",
+    long_description="See https://github.com/aieater/python_glview\n"+readme,
     classifiers=(
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
