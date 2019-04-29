@@ -34,6 +34,10 @@ import time
 import traceback
 import threading
 import platform
+import signal
+import numpy as np
+def handler(signum, frame): exit(0)
+signal.signal(signal.SIGINT, handler)
 
 import configparser
 config = configparser.ConfigParser()
@@ -41,31 +45,44 @@ ini_file_name = os.path.basename(__file__.split(".")[0]+".ini")
 if os.path.exists(ini_file_name) and USE_CONFIG:
     config.read(ini_file_name)
 else:
-    config["Viewer"] = {"window_name":"Screen","xsync":True,"vsync":True,"double_buffer":True,"rgba_buffer":False,"fullscreen":False,"x":100,"y":100,"width":1280,"height":720,"opengl_direct":True}
+    config["Viewer"] = {"window_name":"Screen","xsync":True,"vsync":True,"double_buffer":True,"rgba_buffer":False,"fullscreen":False,"window_x":100,"window_y":100,"window_width":1280,"window_height":720,"opengl_direct":True}
     if USE_CONFIG: config.write(open(ini_file_name,"w"))
 
 def get_config(): return {section: dict(config[section]) for section in config.sections()}
 
 class Viewer:
-    def __init__(self,**kwargs):
+    def init(self,kargs):
+        print(kargs)
+        for k in kargs: setattr(self,k,kargs[k])
+        def s_bool(s,k): setattr(s,k,to_bool(getattr(s,k)))
+        def s_int(s,k): setattr(s,k,int(getattr(s,k)))
+        s_bool(self,"xsync")
+        s_bool(self,"vsync")
+        s_bool(self,"double_buffer")
+        s_bool(self,"rgba_buffer")
+        s_bool(self,"fullscreen")
+        s_int(self,"window_x")
+        s_int(self,"window_y")
+        s_int(self,"window_width")
+        s_int(self,"window_height")
+        s_bool(self,"opengl_direct")
+        print(self.window_width)
+
+    def __init__(self,**kargs):
+        global config
         self.cnt = 0
         self.tm = 0
         self.cnt2 = 0
-        self.destructor_function = None
         self.image_buffer = None
+        self.destructor_function = None
         self.idle_function = None
-        self.window_width = 0
-        self.window_height = 0
-        self.window_name = config["Viewer"]["window_name"]
-        self.fullscreen = to_bool(config["Viewer"]["fullscreen"])
-        self.opengl_direct = to_bool(config["Viewer"]["opengl_direct"])
         self.previous_time = time.time()
-        if "window_name" in kwargs:
-            self.window_name = kwargs["window_name"]
-        if "fullscreen" in kwargs:
-            self.fullscreen = to_bool(kwargs["fullscreen"])
-        if "opengl_direct" in kwargs:
-            self.opengl_direct = to_bool(kwargs["opengl_direct"])
+        cv = config["Viewer"]
+        for k in cv: setattr(self,k,cv[k])
+
+        self.init(kargs)
+
+
     def set_window_name(self,name): self.window_name = name
     def set_image(self,img): self.image_buffer = img
     def set_loop(self,func): self.idle_function = func
@@ -95,14 +112,11 @@ class Viewer:
             print("Unable to set vsync mode, using driver defaults: {}".format(e))
 
 
-    def start(self,x=int(config["Viewer"]["x"]),y=int(config["Viewer"]["y"]),w=int(config["Viewer"]["width"]),h=int(config["Viewer"]["height"])):
+    def start(self,**kargs):
         global AVAILABLE_OPENGL
-        self.window_width = w
-        self.window_height = h
-
+        self.init(kargs)
 
         window_type = "offscreen"
-
         if platform.uname()[0] == "Linux":
             if 'DISPLAY' in os.environ:
                 if DEBUG: print("DISPLAY:",os.environ['DISPLAY'])
@@ -122,30 +136,36 @@ class Viewer:
             print("Direct:",self.opengl_direct)
 
         if self.opengl_direct and AVAILABLE_OPENGL:
-            print("Use GPU directly")
+            print("")
+            print("---- Use GPU directly ----")
+            print("")
             args = []
-            if to_bool(config["Viewer"]["xsync"]):
+            if self.xsync:
                 args.append('-sync')
                 self.enable_vsync()
             if DEBUG: print("ARGS:",args)
+            w = self.window_width
+            h = self.window_height
+            x = self.window_x
+            y = self.window_y
             glutInit(args)
             DB = GLUT_SINGLE
             CL = GLUT_RGB
-            if to_bool(config["Viewer"]["double_buffer"]):
+            if self.double_buffer:
                 DB = GLUT_DOUBLE
                 if DEBUG: print("Use double buffer")
             else:
                 if DEBUG: print("Use single buffer")
 
-            if to_bool(config["Viewer"]["rgba_buffer"]):
+            if self.rgba_buffer:
                 CL = GLUT_RGBA
                 if DEBUG: print("Use rgba buffer")
             else:
                 if DEBUG: print("Use rgb buffer")
 
             glutInitDisplayMode(CL | DB | GLUT_DEPTH)
-            glutInitWindowSize(w, h)
-            glutInitWindowPosition(x, y)
+            glutInitWindowSize(w,h)
+            glutInitWindowPosition(x,y)
             glutCreateWindow(self.window_name)
             if self.fullscreen: glutFullScreen()
             glutDisplayFunc(self.__gl_draw)
@@ -161,11 +181,11 @@ class Viewer:
             glOrtho(-1,1,-1,1,-1,1)
 
             glutMainLoop()
-            glutLeaveMainLoop()
         else:
             if window_type == "offscreen":
                 import cv2
                 print("@WARNING: No display.")
+                print("---- No renderer ----")
                 while True:
                     if self.idle_function is not None:
                         try:
@@ -189,14 +209,22 @@ class Viewer:
                         time.sleep(0.008)
             else:
                 import cv2
-                print("@WARNING: GPU or physical display is not available. Use CPU renderer.")
-                # cv2.namedWindow(self.window_name, cv2.WINDOW_OPENGL)
-                # cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
+                if self.opengl_direct: print("@WARNING: GPU or physical display is not available.")
+                print("")
+                print("---- Use CPU(OpenCV) renderer ----")
+                print("")
+                buffer = np.zeros(shape=(self.window_height,self.window_width,3),dtype=np.uint8)
                 if self.fullscreen:
+                    cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
+                    # cv2.namedWindow(self.window_name, cv2.WINDOW_OPENGL)
                     cv2.setWindowProperty(self.window_name, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+                else:
+                    cv2.namedWindow(self.window_name, cv2.WINDOW_AUTOSIZE|cv2.WINDOW_KEEPRATIO|cv2.WINDOW_GUI_NORMAL)
+                    # cv2.namedWindow(self.window_name, cv2.WINDOW_NORMAL)
+                    # pass
+                    # cv2.namedWindow(self.window_name, cv2.WINDOW_GUI_NORMAL)
 
                 while True:
-
                     if self.idle_function is not None:
                         try:
                             self.idle_function()
@@ -209,11 +237,34 @@ class Viewer:
                         try:
                             self.cnt+=1
                             self.image_buffer = cv2.cvtColor(self.image_buffer,cv2.COLOR_BGR2RGB)
+                            buffer.fill(0)
+                            w = self.window_width
+                            h = self.window_height
+                            iw = self.image_buffer.shape[1]
+                            ih = self.image_buffer.shape[0]
+                            img = self.image_buffer
+                            r = w/h
+                            ir = iw/ih
+                            ratio = 1.0
+                            if r > ir:
+                                ratio = h/ih
+                                img = cv2.resize(img,(int(img.shape[1]*ratio),int(img.shape[0]*ratio)))
+                                hlf = int((w-img.shape[1])/2)
+                                buffer[0:img.shape[0],hlf:img.shape[1]+hlf,] = img
+                            else:
+                                ratio = w/iw
+                                img = cv2.resize(img,(int(img.shape[1]*ratio),int(img.shape[0]*ratio)))
+                                hlf = int((h-img.shape[0])/2)
+                                buffer[hlf:img.shape[0]+hlf,0:img.shape[1],] = img
                             if time.time() - self.tm > 1.0:
                                 if DEBUG: print("PyOpenGLView[CV]-FPS",self.cnt)
                                 self.tm = time.time()
                                 self.cnt = 0
-                            cv2.imshow(self.window_name,self.image_buffer)
+                            if self.fullscreen:
+                                cv2.imshow(self.window_name,self.image_buffer)
+                            else:
+                                cv2.imshow(self.window_name,buffer)
+                                
                             if cv2.waitKey(8) & 0xFF == 27:
                                 cv2.waitKey(1)
                                 cv2.destroyAllWindows()
@@ -240,7 +291,8 @@ class Viewer:
             if self.destructor_function is not None:
                 print("Call destructor function")
                 self.destructor_function()
-            exit(0)
+            exit(9)
+            return
 
     def __gl_draw(self):
         self.cnt2 += 1
@@ -253,6 +305,12 @@ class Viewer:
                     self.tm = time.time()
                     self.cnt = 0
                     self.cnt2 = 0
+                    for i in threading.enumerate():
+                        if i.name == "MainThread":
+                            if i.is_alive() == False:
+                                exit(9)
+                                return
+
                 glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT)
                 glColor3f(1.0, 1.0, 1.0)
                 glMatrixMode(GL_PROJECTION)
@@ -266,13 +324,25 @@ class Viewer:
                 glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR)
                 glBegin(GL_QUADS)
                 glTexCoord2d(0.0, 1.0)
-                glVertex3d(-1.0, -1.0,  0.0)
+                w = self.window_width
+                h = self.window_height
+                iw = self.image_buffer.shape[1]
+                ih = self.image_buffer.shape[0]
+                r = w/h
+                ir = iw/ih
+                x_ratio = 1.0
+                y_ratio = 1.0
+                if r > ir:
+                    x_ratio = r/ir
+                else:
+                    y_ratio = r/ir
+                glVertex3d(-x_ratio, -y_ratio,  0.0)
                 glTexCoord2d(1.0, 1.0)
-                glVertex3d( 1.0, -1.0,  0.0)
+                glVertex3d( x_ratio, -y_ratio,  0.0)
                 glTexCoord2d(1.0, 0.0)
-                glVertex3d( 1.0,  1.0,  0.0)
+                glVertex3d( x_ratio,  y_ratio,  0.0)
                 glTexCoord2d(0.0, 0.0)
-                glVertex3d(-1.0,  1.0,  0.0)
+                glVertex3d(-x_ratio,  y_ratio,  0.0)
                 glEnd()
 
                 glFlush()
@@ -280,6 +350,7 @@ class Viewer:
             except:
                 traceback.print_exc()
                 exit(9)
+                return
             self.image_buffer = None
             if time.time()-self.previous_time<0.008:
                 time.sleep(0.008)
@@ -288,7 +359,10 @@ class Viewer:
 if __name__ == '__main__':
     import cv2
     import pyglview
-    viewer = pyglview.Viewer()
+    # viewer = pyglview.Viewer(opengl_direct=True)
+    viewer = pyglview.Viewer(opengl_direct=False)
+    # viewer = pyglview.Viewer(window_width=512,window_height=512,fullscreen=True,opengl_direct=True)
+    # viewer = pyglview.Viewer(window_width=512,window_height=512,fullscreen=True,opengl_direct=False)
     cap = cv2.VideoCapture(os.path.join(os.path.expanduser('~'),"test.mp4"))
     def loop():
         check,frame = cap.read()
