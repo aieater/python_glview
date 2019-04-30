@@ -261,10 +261,10 @@ class Viewer:
                                 self.tm = time.time()
                                 self.cnt = 0
                             if self.fullscreen:
-                                cv2.imshow(self.window_name,self.image_buffer)
+                                cv2.imshow(self.window_name, self.image_buffer)
                             else:
-                                cv2.imshow(self.window_name,buffer)
-                                
+                                cv2.imshow(self.window_name, buffer)
+
                             if cv2.waitKey(8) & 0xFF == 27:
                                 cv2.waitKey(1)
                                 cv2.destroyAllWindows()
@@ -333,7 +333,7 @@ class Viewer:
                 x_ratio = 1.0
                 y_ratio = 1.0
                 if r > ir:
-                    x_ratio = r/ir
+                    x_ratio = ir/r
                 else:
                     y_ratio = r/ir
                 glVertex3d(-x_ratio, -y_ratio,  0.0)
