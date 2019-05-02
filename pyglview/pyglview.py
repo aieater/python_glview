@@ -45,18 +45,16 @@ ini_file_name = os.path.basename(__file__.split(".")[0]+".ini")
 if os.path.exists(ini_file_name) and USE_CONFIG:
     config.read(ini_file_name)
 else:
-    config["Viewer"] = {"window_name":"Screen","xsync":True,"vsync":True,"double_buffer":True,"rgba_buffer":False,"fullscreen":False,"window_x":100,"window_y":100,"window_width":1280,"window_height":720,"opengl_direct":True}
+    config["Viewer"] = {"window_name":"Screen","vsync":False,"double_buffer":False,"rgba_buffer":False,"fullscreen":False,"window_x":100,"window_y":100,"window_width":1280,"window_height":720,"cpu":False}
     if USE_CONFIG: config.write(open(ini_file_name,"w"))
 
 def get_config(): return {section: dict(config[section]) for section in config.sections()}
 
 class Viewer:
     def init(self,kargs):
-        print(kargs)
         for k in kargs: setattr(self,k,kargs[k])
         def s_bool(s,k): setattr(s,k,to_bool(getattr(s,k)))
         def s_int(s,k): setattr(s,k,int(getattr(s,k)))
-        s_bool(self,"xsync")
         s_bool(self,"vsync")
         s_bool(self,"double_buffer")
         s_bool(self,"rgba_buffer")
@@ -65,7 +63,7 @@ class Viewer:
         s_int(self,"window_y")
         s_int(self,"window_width")
         s_int(self,"window_height")
-        s_bool(self,"opengl_direct")
+        s_bool(self,"cpu")
         print(self.window_width)
 
     def __init__(self,**kargs):
@@ -108,6 +106,7 @@ class Viewer:
             context = ogl.CGLGetCurrentContext()
 
             ogl.CGLSetParameter(context, 222, ctypes.pointer(v))
+            if DEBUG: print("Enabled vsync")
         except Exception as e:
             print("Unable to set vsync mode, using driver defaults: {}".format(e))
 
@@ -133,14 +132,15 @@ class Viewer:
         if DEBUG:
             print("WindowType:",window_type)
             print("Available OpenGL:",AVAILABLE_OPENGL)
-            print("Direct:",self.opengl_direct)
+            print("GPU:",self.cpu == False)
 
-        if self.opengl_direct and AVAILABLE_OPENGL:
+        if self.cpu == False and AVAILABLE_OPENGL:
             print("")
             print("---- Use GPU directly ----")
             print("")
             args = []
-            if self.xsync:
+            if DEBUG: print("VSync:",self.vsync)
+            if self.vsync:
                 args.append('-sync')
                 self.enable_vsync()
             if DEBUG: print("ARGS:",args)
@@ -162,6 +162,7 @@ class Viewer:
                 if DEBUG: print("Use rgba buffer")
             else:
                 if DEBUG: print("Use rgb buffer")
+
 
             glutInitDisplayMode(CL | DB | GLUT_DEPTH)
             glutInitWindowSize(w,h)
@@ -209,7 +210,7 @@ class Viewer:
                         time.sleep(0.008)
             else:
                 import cv2
-                if self.opengl_direct: print("@WARNING: GPU or physical display is not available.")
+                if self.cpu == False: print("@WARNING: GPU or physical display is not available.")
                 print("")
                 print("---- Use CPU(OpenCV) renderer ----")
                 print("")
@@ -257,7 +258,7 @@ class Viewer:
                                 hlf = int((h-img.shape[0])/2)
                                 buffer[hlf:img.shape[0]+hlf,0:img.shape[1],] = img
                             if time.time() - self.tm > 1.0:
-                                if DEBUG: print("PyOpenGLView[CV]-FPS",self.cnt)
+                                if DEBUG: print("PyOpenGLView[CPU]-FPS",self.cnt)
                                 self.tm = time.time()
                                 self.cnt = 0
                             if self.fullscreen:
@@ -301,7 +302,7 @@ class Viewer:
             try:
                 self.cnt+=1
                 if time.time() - self.tm > 1.0:
-                    if DEBUG: print("PyOpenGLView[GL]-FPS",self.cnt,"Idle",self.cnt2)
+                    if DEBUG: print("PyOpenGLView[GPU]-FPS",self.cnt,"Idle",self.cnt2)
                     self.tm = time.time()
                     self.cnt = 0
                     self.cnt2 = 0
@@ -346,21 +347,22 @@ class Viewer:
                 glEnd()
 
                 glFlush()
-                glutSwapBuffers()
+                if self.double_buffer:
+                    glutSwapBuffers()
             except:
                 traceback.print_exc()
                 exit(9)
                 return
             self.image_buffer = None
-            if time.time()-self.previous_time<0.008:
-                time.sleep(0.008)
-            self.previous_time = time.time()
+        if time.time()-self.previous_time<0.008:
+            time.sleep(0.005)
+        self.previous_time = time.time()
 
 if __name__ == '__main__':
     import cv2
     import pyglview
-    # viewer = pyglview.Viewer(opengl_direct=True)
-    viewer = pyglview.Viewer(opengl_direct=False)
+    viewer = pyglview.Viewer(cpu=False,fullscreen=True)
+    # viewer = pyglview.Viewer(opengl_direct=False)
     # viewer = pyglview.Viewer(window_width=512,window_height=512,fullscreen=True,opengl_direct=True)
     # viewer = pyglview.Viewer(window_width=512,window_height=512,fullscreen=True,opengl_direct=False)
     cap = cv2.VideoCapture(os.path.join(os.path.expanduser('~'),"test.mp4"))
