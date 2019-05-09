@@ -68,6 +68,7 @@ class Viewer:
 
     def __init__(self,**kargs):
         global config
+        self.keyboard_listener = None
         self.cnt = 0
         self.tm = 0
         self.cnt2 = 0
@@ -173,6 +174,7 @@ class Viewer:
             glutIdleFunc(self.__gl_draw)
             glutReshapeFunc(self.__gl_resize)
             glutKeyboardFunc(self.__gl_keyboard)
+            glutSpecialFunc(self.__gl_keyboard)
 
 
             glClearColor(0.0, 0.0, 0.0, 1.0)
@@ -288,6 +290,11 @@ class Viewer:
         glViewport(0, 0, Width, Height)
 
     def __gl_keyboard(self,key, x, y):
+        if type(key) == bytes:
+            key = ord(key)
+        else:
+            key = 0x0100+key
+        if self.keyboard_listener: self.keyboard_listener(key,x,y)
         if key == b'q' or key == b'\x1b' or  key == b'\x03':
             if self.destructor_function is not None:
                 print("Call destructor function")
