@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 import os
 import pyglview
 import cv2
@@ -7,8 +8,8 @@ viewer = pyglview.Viewer(window_width=512,window_height=512,fullscreen=False,ope
 # viewer = pyglview.Viewer(window_width=512,window_height=512,fullscreen=False,opengl_direct=False)
 def loop():
     check,frame = cap.read()
-    frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
     if check:
+        frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
         viewer.set_image(frame)
     pass
 viewer.set_loop(loop)
