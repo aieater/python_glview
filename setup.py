@@ -3,13 +3,13 @@ import sys, os
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-version = '1.1.6'
+version = '1.1.7'
 
 install_requires = [
     'opencv-python',
     'configparser',
     'PyOpenGL',
-    'PyOpenGL_accelerate',
+#    'PyOpenGL_accelerate',
 ]
 
 readme = open("README.md").read()
