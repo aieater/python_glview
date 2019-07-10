@@ -186,7 +186,8 @@ class Viewer:
             glutMainLoop()
         else:
             if window_type == "offscreen":
-                import cv2
+                #import cv2
+                import imgcat
                 print("@WARNING: No display.")
                 print("---- No renderer ----")
                 while True:
@@ -198,11 +199,12 @@ class Viewer:
                     if self.image_buffer is not None:
                         try:
                             self.cnt+=1
-                            self.image_buffer = cv2.cvtColor(self.image_buffer,cv2.COLOR_BGR2RGB)
+                            #self.image_buffer = cv2.cvtColor(self.image_buffer,cv2.COLOR_BGR2RGB)
                             if time.time() - self.tm > 1.0:
                                 if DEBUG: print("PyOpenGLView[N/A]-FPS",self.cnt)
                                 self.tm = time.time()
                                 self.cnt = 0
+                            imgcat.imgcat(self.image_buffer)
                             time.sleep(0.008)
                         except:
                             traceback.print_exc()
@@ -372,7 +374,13 @@ if __name__ == '__main__':
     # viewer = pyglview.Viewer(opengl_direct=False)
     # viewer = pyglview.Viewer(window_width=512,window_height=512,fullscreen=True,opengl_direct=True)
     # viewer = pyglview.Viewer(window_width=512,window_height=512,fullscreen=True,opengl_direct=False)
-    cap = cv2.VideoCapture(os.path.join(os.path.expanduser('~'),"test.mp4"))
+    if len(sys.argv)>1:
+        cap = cv2.VideoCapture(os.path.expanduser(sys.argv[1]))
+    else:
+        cap = cv2.VideoCapture(os.path.join(os.path.expanduser('~'),"test.mp4"))
+    if cap is None:
+        print("Could not detect capture fd")
+        exit(9)
     def loop():
         check,frame = cap.read()
         frame = cv2.cvtColor(frame,cv2.COLOR_BGR2RGB)
