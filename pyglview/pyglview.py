@@ -204,6 +204,7 @@ class Viewer:
                                 if DEBUG: print("PyOpenGLView[N/A]-FPS",self.cnt)
                                 self.tm = time.time()
                                 self.cnt = 0
+                            print("\033[0;0f")
                             imgcat.imgcat(self.image_buffer)
                             time.sleep(0.008)
                         except:
