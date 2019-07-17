@@ -188,6 +188,23 @@ class Viewer:
             if window_type == "offscreen":
                 #import cv2
                 import imgcat
+                import queue
+                import multiprocessing
+                def iterm2_renderer(q):
+                    while True:
+                        img = q.get()
+                        print("\033[0;0f")
+                        imgcat.imgcat(img)
+                if True:
+                    q = multiprocessing.Queue()
+                    th = multiprocessing.Process(target=iterm2_renderer,args=(q,),daemon=True)
+                    th.start()
+                else:
+                    q = queue.Queue()
+                    th = threading.Thread(target=iterm2_renderer,args=(q,))
+                    th.setDaemon(True)
+                    th.start()
+
                 print("@WARNING: No display.")
                 print("---- No renderer ----")
                 while True:
@@ -204,8 +221,9 @@ class Viewer:
                                 if DEBUG: print("PyOpenGLView[N/A]-FPS",self.cnt)
                                 self.tm = time.time()
                                 self.cnt = 0
-                            print("\033[0;0f")
-                            imgcat.imgcat(self.image_buffer)
+                            if q.empty():
+                                q.put(self.image_buffer)
+                            #imgcat.imgcat(self.image_buffer)
                             time.sleep(0.008)
                         except:
                             traceback.print_exc()

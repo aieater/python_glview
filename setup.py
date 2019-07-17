@@ -3,7 +3,7 @@ import sys, os
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-version = '1.1.9'
+version = '1.1.10'
 
 install_requires = [
     'opencv-python',
