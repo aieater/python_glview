@@ -31,7 +31,7 @@ curl -sL http://install.aieater.com/setup_nvidia_with_cuda10 | sudo bash -
 
 ##### Desktop package (optional)
 
-If you installed OS as Ubuntu Server, you need to install desktop environment.
+Ubuntu16
 ```
 sudo apt update
 sudo apt install -y ubuntu-desktop
