@@ -36,6 +36,7 @@ import threading
 import platform
 import signal
 import numpy as np
+
 def handler(signum, frame): exit(0)
 signal.signal(signal.SIGINT, handler)
 
