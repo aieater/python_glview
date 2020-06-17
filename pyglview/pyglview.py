@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
+import logging
 import os
 import signal
 import sys
 import threading
 import time
-import logging
 
 import numpy as np
 from easydict import EasyDict as edict
@@ -22,7 +22,6 @@ except Exception as e:
     print("  > pip3 install PyOpenGL PyOpenGL-accelerate")
     AVAILABLE_OPENGL = False
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -35,7 +34,6 @@ def handler(signum, frame):
 
 
 signal.signal(signal.SIGINT, handler)
-
 
 config = edict()
 config.viewer = edict({"window_name": "Screen", "vsync": False, "double_buffer": False, "rgba_buffer": False, "fullscreen": False, "window_x": 100, "window_y": 100, "window_width": 1280, "window_height": 720, "cpu": False})
@@ -409,7 +407,8 @@ if __name__ == '__main__':
     logger.addHandler(handler)
     logger.setLevel(logging.DEBUG)
     logger.handlers.clear()
-    import coloredlogs;coloredlogs.install()
+    import coloredlogs
+    coloredlogs.install()
 
     parser = argparse.ArgumentParser(description='')
     parser.add_argument('input', type=str, help='')
@@ -425,7 +424,6 @@ if __name__ == '__main__':
     parser.add_argument('--generate', action='store_true')
     parser.add_argument('--disable_audio_normalize', action='store_true')
     args = parser.parse_args()
-
 
     viewer = Viewer(cpu=False, fullscreen=False)
     # viewer = Viewer(opengl_direct=False)
