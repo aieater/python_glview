@@ -3,13 +3,16 @@ import sys, os
 
 here = os.path.abspath(os.path.dirname(__file__))
 
-version = '1.3.0'
+version = '1.3.2'
 
 install_requires = [
 #   'opencv-python',
     'configparser',
     'imgcat',
+    'easydict',
+    'ctypes',
     'PyOpenGL',
+    'PyOpenGL-accelerate',
 #    'PyOpenGL_accelerate',
 ]
 
