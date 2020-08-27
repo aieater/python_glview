@@ -221,6 +221,7 @@ class Viewer:
                             self.idle_function()
                         except Exception as e:
                             logger.error(e)
+                            exit(9)
                             return
                     if self.image_buffer is not None:
                         try:
@@ -335,7 +336,18 @@ class Viewer:
 
     def __gl_draw(self):
         self.cnt2 += 1
-        if self.idle_function is not None: self.idle_function()
+        if self.idle_function is not None:
+            try:
+                self.idle_function()
+            except:
+                try:
+                    glutLeaveMainLoop()
+                except:
+                    os._exit(0)
+            # try:
+            # except Exception as e:
+            #     exit(9)
+                # glutDestroyWindow(self.window_name)
         if self.image_buffer is not None:
             try:
                 self.cnt += 1
