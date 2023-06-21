@@ -36,7 +36,8 @@ def handler(signum, frame):
 signal.signal(signal.SIGINT, handler)
 
 config = edict()
-config.viewer = edict({"window_name": "Screen", "vsync": False, "double_buffer": False, "rgba_buffer": False, "fullscreen": False, "window_x": 100, "window_y": 100, "window_width": 1280, "window_height": 720, "cpu": False})
+config.viewer = edict({"window_name": "Screen", "vsync": False, "double_buffer": False, "rgba_buffer": False, "fullscreen": False, "window_x": 100, "window_y": 100, "window_width": 1280, "window_height": 720, "cpu": False,
+ "borderless": False})
 
 
 def get_config():
@@ -63,6 +64,7 @@ class Viewer:
         s_int(self, "window_width")
         s_int(self, "window_height")
         s_bool(self, "cpu")
+        s_bool(self, "borderless")
         logger.debug(f"Window:{self.window_width}")
 
     def __init__(self, **kargs):
@@ -172,7 +174,13 @@ class Viewer:
             else:
                 logger.debug("Use rgb buffer")
 
-            glutInitDisplayMode(CL | DB | GLUT_DEPTH)
+            flags = CL | DB | GLUT_DEPTH
+
+            # Set additional flags for borderless
+            if self.borderless:
+                flags |= GLUT_BORDERLESS | GLUT_CAPTIONLESS
+
+            glutInitDisplayMode(flags)
             glutInitWindowSize(w, h)
             glutInitWindowPosition(x, y)
             glutCreateWindow(self.window_name)
